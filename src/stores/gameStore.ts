@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Character, Achievement, Quest } from '../types';
-import { MOCK_ACHIEVEMENTS, MOCK_QUESTS, LEVEL_THRESHOLDS } from '../data/mockData';
+import { LEVEL_THRESHOLDS } from '../data/mockData';
 
 const FRESH_CHARACTER: Character = {
   name: 'Prixi',
@@ -27,14 +27,15 @@ interface GameState {
   unlockAchievement: (id: string) => void;
   setCharacterName: (name: string) => void;
   resetCharacter: () => void;
+  resetAll: () => void;
 }
 
 export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
       character: FRESH_CHARACTER,
-      achievements: MOCK_ACHIEVEMENTS,
-      quests: MOCK_QUESTS,
+      achievements: [],
+      quests: [],
       totalWorkoutsCompleted: 0,
 
       addXP: (amount: number) => {
@@ -107,6 +108,15 @@ export const useGameStore = create<GameState>()(
 
       resetCharacter: () => {
         set({ character: FRESH_CHARACTER, totalWorkoutsCompleted: 0 });
+      },
+
+      resetAll: () => {
+        set({
+          character: FRESH_CHARACTER,
+          achievements: [],
+          quests: [],
+          totalWorkoutsCompleted: 0,
+        });
       },
     }),
     { name: 'prixi-game' }

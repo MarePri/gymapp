@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useWorkoutStore } from '../../stores/workoutStore';
 import type { ProgressionSuggestion } from '../../stores/workoutStore';
+import { useUserStore } from '../../stores/userStore';
 import { useGameStore } from '../../stores/gameStore';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,28 +12,11 @@ import { GlassHeader } from '../ui/GlassHeader';
 import {
   Dumbbell, CheckCircle, Timer, ArrowLeft, Zap, Trophy, ThumbsUp,
   Minus, ThumbsDown, Plus, X, Flame, Star, Target, Trash2, Edit3,
-  ChevronUp,
+  ChevronUp, Search, BookmarkPlus,
 } from 'lucide-react';
 import type { DifficultyRating } from '../../types';
-
-const ALL_EXERCISES = [
-  { name: 'Barbell Bench Press', muscleGroup: 'Chest' },
-  { name: 'Incline Dumbbell Press', muscleGroup: 'Chest' },
-  { name: 'Cable Fly', muscleGroup: 'Chest' },
-  { name: 'Barbell Squat', muscleGroup: 'Legs' },
-  { name: 'Leg Press', muscleGroup: 'Legs' },
-  { name: 'Romanian Deadlift', muscleGroup: 'Hamstrings' },
-  { name: 'Deadlift', muscleGroup: 'Back' },
-  { name: 'Barbell Row', muscleGroup: 'Back' },
-  { name: 'Lat Pulldown', muscleGroup: 'Back' },
-  { name: 'Standing OHP', muscleGroup: 'Shoulders' },
-  { name: 'Lateral Raise', muscleGroup: 'Shoulders' },
-  { name: 'Barbell Curl', muscleGroup: 'Biceps' },
-  { name: 'Tricep Pushdown', muscleGroup: 'Triceps' },
-  { name: 'Close-Grip Bench Press', muscleGroup: 'Triceps' },
-  { name: 'Pull-up', muscleGroup: 'Back' },
-  { name: 'Dips', muscleGroup: 'Chest' },
-];
+import { ALL_EXERCISES, MUSCLE_GROUPS, searchExercises } from '../../data/exercises';
+import type { ExerciseOption } from '../../data/exercises';
 
 export function WorkoutPage() {
   const {
@@ -50,6 +34,22 @@ export function WorkoutPage() {
   const [rating, setRating] = useState<DifficultyRating | null>(null);
   const [prevLevel, setPrevLevel] = useState(character.level);
 
+  // User custom exercises
+  const customExercises = useUserStore((s) => s.customExercises);
+  const addCustomExercise = useUserStore((s) => s.addCustomExercise);
+  const removeCustomExercise = useUserStore((s) => s.removeCustomExercise);
+
+  // Merge default + custom exercises
+  const allExercises = useMemo(() => {
+    const merged = [...ALL_EXERCISES];
+    customExercises.forEach((ce) => {
+      if (!merged.some((e) => e.name === ce.name)) {
+        merged.push(ce);
+      }
+    });
+    return merged;
+  }, [customExercises]);
+
   // Free workout builder state
   const [showFreeBuilder, setShowFreeBuilder] = useState(false);
   const [freeExName, setFreeExName] = useState('');
@@ -60,6 +60,11 @@ export function WorkoutPage() {
   const [freeExercises, setFreeExercises] = useState<{ name: string; muscleGroup: string; sets: number; reps: number; weight: number }[]>([]);
   const [showExPicker, setShowExPicker] = useState(false);
   const [exSearch, setExSearch] = useState('');
+  const [exFilterGroup, setExFilterGroup] = useState<string>('');
+  const [showCreateExercise, setShowCreateExercise] = useState(false);
+  const [newExName, setNewExName] = useState('');
+  const [newExGroup, setNewExGroup] = useState('Chest');
+  const [newExEquip, setNewExEquip] = useState('');
 
   // Inline editing for sets
   const [editingSet, setEditingSet] = useState<{ exerciseId: string; setId: string } | null>(null);
@@ -192,20 +197,62 @@ export function WorkoutPage() {
                       className="w-full bg-cyber-700/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 outline-none focus:border-neon-cyan/40"
                     />
                     {showExPicker && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-cyber-700 border border-white/10 rounded-xl max-h-40 overflow-y-auto z-10">
-                        {ALL_EXERCISES.filter(e => e.name.toLowerCase().includes((exSearch || freeExName).toLowerCase())).slice(0, 8).map((e) => (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-cyber-700 border border-white/10 rounded-xl max-h-48 overflow-y-auto z-10">
+                        {/* Muscle group filter chips */}
+                        <div className="flex flex-wrap gap-1 px-2 py-1.5 border-b border-white/5">
                           <button
-                            key={e.name}
-                            onClick={() => pickExercise(e.name, e.muscleGroup)}
-                            className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-neon-cyan/10 hover:text-white transition-colors cursor-pointer"
+                            onClick={() => setExFilterGroup('')}
+                            className={`text-[9px] px-1.5 py-0.5 rounded-full transition-colors cursor-pointer ${
+                              !exFilterGroup ? 'bg-neon-cyan/20 text-neon-cyan' : 'text-gray-500 hover:text-white'
+                            }`}
                           >
-                            <span className="font-medium">{e.name}</span>
-                            <span className="text-gray-500 ml-2">{e.muscleGroup}</span>
+                            All
                           </button>
-                        ))}
-                        {freeExName.trim() && !ALL_EXERCISES.some(e => e.name.toLowerCase() === freeExName.toLowerCase()) && (
-                          <div className="px-3 py-2 text-[10px] text-gray-500 italic">Custom exercise</div>
-                        )}
+                          {['Chest','Back','Legs','Shoulders','Biceps','Triceps','Core','Neck','Calves','Glutes','Hamstrings','Forearms'].map((g) => (
+                            <button
+                              key={g}
+                              onClick={() => setExFilterGroup(g === exFilterGroup ? '' : g)}
+                              className={`text-[9px] px-1.5 py-0.5 rounded-full transition-colors cursor-pointer ${
+                                exFilterGroup === g ? 'bg-neon-cyan/20 text-neon-cyan' : 'text-gray-500 hover:text-white'
+                              }`}
+                            >
+                              {g}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="overflow-y-auto max-h-32">
+                          {allExercises
+                            .filter(e => !exFilterGroup || e.muscleGroup === exFilterGroup)
+                            .filter(e => e.name.toLowerCase().includes((exSearch || freeExName).toLowerCase()))
+                            .slice(0, 10)
+                            .map((e) => (
+                              <button
+                                key={e.name}
+                                onClick={() => pickExercise(e.name, e.muscleGroup)}
+                                className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-neon-cyan/10 hover:text-white transition-colors cursor-pointer flex items-center justify-between"
+                              >
+                                <span className="font-medium truncate">{e.name}</span>
+                                <span className="text-gray-500 flex-shrink-0 ml-2">
+                                  {e.muscleGroup}{e.equipment ? ` · ${e.equipment}` : ''}
+                                </span>
+                              </button>
+                            ))}
+                          {/* Create custom option */}
+                          {freeExName.trim() && !allExercises.some(e => e.name.toLowerCase() === freeExName.toLowerCase()) && (
+                            <button
+                              onClick={() => {
+                                setNewExName(freeExName.trim());
+                                setNewExGroup(freeExMuscle);
+                                setShowCreateExercise(true);
+                                setShowExPicker(false);
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs text-neon-cyan hover:bg-neon-cyan/10 transition-colors cursor-pointer flex items-center gap-2 border-t border-white/5"
+                            >
+                              <BookmarkPlus size={12} />
+                              Create "{freeExName.trim()}" as custom exercise
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -262,6 +309,83 @@ export function WorkoutPage() {
                     icon={<Zap size={14} />}
                   >
                     Start Workout
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Create Custom Exercise Modal */}
+        <AnimatePresence>
+          {showCreateExercise && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.85 }}
+                animate={{ scale: 1 }}
+                className="bg-card-bg border border-white/10 rounded-3xl p-5 max-w-sm w-full"
+              >
+                <h2 className="text-base font-bold text-white mb-3">Create Custom Exercise</h2>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[10px] text-gray-500 font-mono block mb-0.5">Exercise Name</label>
+                    <input
+                      type="text"
+                      value={newExName}
+                      onChange={(e) => setNewExName(e.target.value)}
+                      placeholder="e.g. Cable Crunch"
+                      className="w-full bg-cyber-700/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 outline-none focus:border-neon-cyan/40"
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 font-mono block mb-0.5">Muscle Group</label>
+                    <select
+                      value={newExGroup}
+                      onChange={(e) => setNewExGroup(e.target.value)}
+                      className="w-full bg-cyber-700/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-white"
+                    >
+                      {MUSCLE_GROUPS.map((g) => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 font-mono block mb-0.5">Equipment (optional)</label>
+                    <input
+                      type="text"
+                      value={newExEquip}
+                      onChange={(e) => setNewExEquip(e.target.value)}
+                      placeholder="e.g. Dumbbell, Cable, Barbell"
+                      className="w-full bg-cyber-700/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 outline-none focus:border-neon-cyan/40"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Button variant="ghost" fullWidth onClick={() => { setShowCreateExercise(false); setShowExPicker(true); }}>
+                    Cancel
+                  </Button>
+                  <Button
+                    fullWidth
+                    disabled={!newExName.trim()}
+                    onClick={() => {
+                      addCustomExercise({
+                        name: newExName.trim(),
+                        muscleGroup: newExGroup,
+                        equipment: newExEquip.trim() || undefined,
+                      });
+                      setFreeExName(newExName.trim());
+                      setFreeExMuscle(newExGroup);
+                      setShowCreateExercise(false);
+                      setShowExPicker(false);
+                    }}
+                  >
+                    Save Exercise
                   </Button>
                 </div>
               </motion.div>
@@ -676,31 +800,71 @@ export function WorkoutPage() {
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="mt-2 pt-2 border-t border-white/5 space-y-1.5">
-                  {ALL_EXERCISES.map((ex) => (
+                {/* Search */}
+                <div className="relative mb-2">
+                  <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <input
+                    type="text"
+                    value={exSearch}
+                    onChange={(e) => setExSearch(e.target.value)}
+                    placeholder="Search exercises..."
+                    className="w-full bg-cyber-700/50 border border-white/10 rounded-xl pl-7 pr-3 py-1.5 text-xs text-white placeholder-gray-600 outline-none focus:border-neon-cyan/40"
+                  />
+                </div>
+                {/* Muscle group filter chips */}
+                <div className="flex flex-wrap gap-1 mb-2">
+                  <button
+                    onClick={() => setExFilterGroup('')}
+                    className={`text-[9px] px-1.5 py-0.5 rounded-full transition-colors cursor-pointer ${
+                      !exFilterGroup ? 'bg-neon-cyan/20 text-neon-cyan' : 'text-gray-500 hover:text-white'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {['Chest','Back','Legs','Shoulders','Biceps','Triceps','Core','Neck','Calves','Glutes','Hamstrings','Forearms'].map((g) => (
                     <button
-                      key={ex.name}
-                      onClick={() => {
-                        const id = `custom-${ex.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
-                        addExerciseToSession({
-                          exerciseId: id,
-                          exerciseName: ex.name,
-                          muscleGroup: ex.muscleGroup,
-                          sets: Array.from({ length: 3 }, (_, si) => ({
-                            id: `${id}-s${si}`,
-                            weight: 20,
-                            reps: 10,
-                            completed: false,
-                          })),
-                        });
-                        setShowExPicker(false);
-                      }}
-                      className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-neon-cyan/10 rounded-xl transition-colors cursor-pointer"
+                      key={g}
+                      onClick={() => setExFilterGroup(g === exFilterGroup ? '' : g)}
+                      className={`text-[9px] px-1.5 py-0.5 rounded-full transition-colors cursor-pointer ${
+                        exFilterGroup === g ? 'bg-neon-cyan/20 text-neon-cyan' : 'text-gray-500 hover:text-white'
+                      }`}
                     >
-                      <span className="font-medium">{ex.name}</span>
-                      <span className="text-gray-500 ml-2">{ex.muscleGroup}</span>
+                      {g}
                     </button>
                   ))}
+                </div>
+                <div className="space-y-1 max-h-60 overflow-y-auto">
+                  {allExercises
+                    .filter(e => !exFilterGroup || e.muscleGroup === exFilterGroup)
+                    .filter(e => e.name.toLowerCase().includes(exSearch.toLowerCase()))
+                    .sort((a, b) => a.muscleGroup.localeCompare(b.muscleGroup))
+                    .map((ex) => (
+                      <button
+                        key={ex.name}
+                        onClick={() => {
+                          const id = `${ex.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
+                          addExerciseToSession({
+                            exerciseId: id,
+                            exerciseName: ex.name,
+                            muscleGroup: ex.muscleGroup,
+                            sets: Array.from({ length: 3 }, (_, si) => ({
+                              id: `${id}-s${si}`,
+                              weight: 20,
+                              reps: 10,
+                              completed: false,
+                            })),
+                          });
+                          setShowExPicker(false);
+                          setExSearch('');
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-neon-cyan/10 rounded-xl transition-colors cursor-pointer flex items-center justify-between"
+                      >
+                        <span className="font-medium truncate">{ex.name}</span>
+                        <span className="text-gray-500 flex-shrink-0 ml-1">
+                          {ex.muscleGroup}{ex.equipment ? ` · ${ex.equipment}` : ''}
+                        </span>
+                      </button>
+                    ))}
                 </div>
               </motion.div>
             )}

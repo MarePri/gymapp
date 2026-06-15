@@ -1,12 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { UserProfile, StrengthStandards, WorkoutFeedback } from '../types';
+import type { ExerciseOption } from '../data/exercises';
 import { generateInitialStandards } from '../utils/progression';
 
 interface UserState {
   profile: UserProfile | null;
   standards: StrengthStandards[];
   workoutFeedback: WorkoutFeedback[];
+  customExercises: ExerciseOption[];
   setProfile: (profile: UserProfile) => void;
   updateWeight: (weight: number) => void;
   updateStandards: (standards: StrengthStandards[]) => void;
@@ -15,6 +17,8 @@ interface UserState {
   updateExerciseWeight: (exercise: string, newWeight: number) => void;
   completeOnboarding: () => void;
   resetProfile: () => void;
+  addCustomExercise: (exercise: ExerciseOption) => void;
+  removeCustomExercise: (name: string) => void;
 }
 
 export const useUserStore = create<UserState>()(
@@ -23,6 +27,7 @@ export const useUserStore = create<UserState>()(
       profile: null,
       standards: [],
       workoutFeedback: [],
+      customExercises: [],
 
       setProfile: (profile: UserProfile) => {
         const standards = generateInitialStandards(profile);
@@ -66,7 +71,19 @@ export const useUserStore = create<UserState>()(
       },
 
       resetProfile: () => {
-        set({ profile: null, standards: [], workoutFeedback: [] });
+        set({ profile: null, standards: [], workoutFeedback: [], customExercises: [] });
+      },
+
+      addCustomExercise: (exercise: ExerciseOption) => {
+        set((state) => ({
+          customExercises: [...state.customExercises, exercise],
+        }));
+      },
+
+      removeCustomExercise: (name: string) => {
+        set((state) => ({
+          customExercises: state.customExercises.filter((e) => e.name !== name),
+        }));
       },
     }),
     { name: 'prixi-user' }

@@ -9,6 +9,7 @@ interface ProgressState {
   addStrengthRecord: (record: StrengthRecord) => void;
   addProgressEntry: (entry: ProgressEntry) => void;
   getExerciseBest: (exercise: string) => StrengthRecord | undefined;
+  resetAll: () => void;
 }
 
 export const useProgressStore = create<ProgressState>()(
@@ -40,6 +41,10 @@ export const useProgressStore = create<ProgressState>()(
 
       getExerciseBest: (exercise: string) => {
         return get().strengthRecords.find(r => r.exercise === exercise);
+      },
+
+      resetAll: () => {
+        set({ strengthRecords: [], progressHistory: [], weeklyReports: [] });
       },
     }),
     { name: 'prixi-progress' }

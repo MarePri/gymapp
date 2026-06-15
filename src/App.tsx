@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { OnboardingPage } from './components/onboarding/OnboardingPage';
 import { ProfilePage } from './components/profile/ProfilePage';
+import { WelcomePage } from './components/welcome/WelcomePage';
 import { MissionsPage } from './components/missions/MissionsPage';
 import { WorkoutPage } from './components/workout/WorkoutPage';
 import { StrengthPage } from './components/strength/StrengthPage';
@@ -16,6 +17,18 @@ function AppRoutes() {
   const profile = useUserStore((s) => s.profile);
   const isOnboarded = profile?.onboarded;
 
+  // No profile at all → Welcome screen
+  if (!profile) {
+    return (
+      <Routes>
+        <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/welcome" element={<WelcomePage />} />
+        <Route path="*" element={<Navigate to="/welcome" replace />} />
+      </Routes>
+    );
+  }
+
+  // Profile exists but not onboarded → force onboarding
   if (!isOnboarded) {
     return (
       <Routes>
@@ -25,6 +38,7 @@ function AppRoutes() {
     );
   }
 
+  // Fully onboarded → main app
   return (
     <Routes>
       <Route element={<AppShell />}>

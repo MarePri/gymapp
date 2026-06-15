@@ -90,6 +90,7 @@ interface WorkoutState {
   applyProgression: (exercise: string, weight: number) => void;
   applyAllProgression: () => void;
   dismissProgression: () => void;
+  resetAll: () => void;
   cancelWorkout: () => void;
   getXPForMission: (missionId: string) => number;
 }
@@ -257,7 +258,15 @@ export const useWorkoutStore = create<WorkoutState>()(
         if (!session) return { xp: 0 };
 
         const mission = get().missions.find((m) => m.id === session.missionId);
-        const xpEarned = mission?.xpReward || 200;
+        const totalCompletedSets = session.exercises.reduce(
+          (sum, ex) => sum + ex.sets.filter((s) => s.completed).length, 0
+        );
+        // Daily missions get 15 XP per set (from mission.xpReward),
+        // free workouts get 10 XP per completed set
+        const isFreeWorkout = session.missionId === 'free-workout';
+        const xpEarned = isFreeWorkout
+          ? totalCompletedSets * 10
+          : mission?.xpReward || totalCompletedSets * 15;
 
         // Calculate progression suggestions instead of auto-applying
         const userStore = useUserStore.getState();
@@ -358,6 +367,16 @@ export const useWorkoutStore = create<WorkoutState>()(
       getXPForMission: (missionId: string) => {
         const mission = get().missions.find((m) => m.id === missionId);
         return mission?.xpReward || 200;
+      },
+
+      resetAll: () => {
+        set({
+          missions: [],
+          activeSession: null,
+          sessionHistory: [],
+          isLoading: true,
+          pendingProgression: null,
+        });
       },
     }),
     { name: 'prixi-workouts' }
