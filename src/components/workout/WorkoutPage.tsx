@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useWorkoutStore } from '../../stores/workoutStore';
-import type { ProgressionSuggestion } from '../../stores/workoutStore';
 import { useUserStore } from '../../stores/userStore';
 import { useGameStore } from '../../stores/gameStore';
 import { useNavigate } from 'react-router-dom';
@@ -11,12 +10,11 @@ import { ProgressBar } from '../ui/ProgressBar';
 import { GlassHeader } from '../ui/GlassHeader';
 import {
   Dumbbell, CheckCircle, Timer, ArrowLeft, Zap, Trophy, ThumbsUp,
-  Minus, ThumbsDown, Plus, X, Flame, Star, Target, Trash2, Edit3,
+  Minus, ThumbsDown, Plus, X, Star, Target, Trash2, Edit3,
   ChevronUp, Search, BookmarkPlus,
 } from 'lucide-react';
 import type { DifficultyRating } from '../../types';
-import { ALL_EXERCISES, MUSCLE_GROUPS, searchExercises } from '../../data/exercises';
-import type { ExerciseOption } from '../../data/exercises';
+import { ALL_EXERCISES, MUSCLE_GROUPS } from '../../data/exercises';
 
 export function WorkoutPage() {
   const {
@@ -37,7 +35,6 @@ export function WorkoutPage() {
   // User custom exercises
   const customExercises = useUserStore((s) => s.customExercises);
   const addCustomExercise = useUserStore((s) => s.addCustomExercise);
-  const removeCustomExercise = useUserStore((s) => s.removeCustomExercise);
 
   // Merge default + custom exercises
   const allExercises = useMemo(() => {

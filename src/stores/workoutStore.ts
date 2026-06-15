@@ -80,6 +80,7 @@ interface WorkoutState {
   pendingProgression: ProgressionSuggestion[] | null;
   refreshMissions: () => void;
   startWorkout: (missionId: string) => void;
+  uncompleteMission: (missionId: string) => void;
   startFreeWorkout: (exercises: { name: string; muscleGroup: string; sets: number; reps: number; weight: number }[]) => void;
   addExerciseToSession: (exercise: { exerciseId: string; exerciseName: string; muscleGroup: string; sets: { id: string; weight: number; reps: number; completed: boolean }[] }) => void;
   updateSet: (exerciseId: string, setId: string, updates: Partial<{ weight: number; reps: number; completed: boolean }>) => void;
