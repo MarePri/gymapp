@@ -5,12 +5,12 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { GlassHeader } from '../ui/GlassHeader';
-import { CheckCircle, ArrowRight, Dumbbell, Star } from 'lucide-react';
+import { CheckCircle, ArrowRight, Dumbbell, Star, RotateCcw } from 'lucide-react';
 
 const dayIcons = ['🔥', '⚡', '🦵', '💪', '🔱', '🏋️'];
 
 export function MissionsPage() {
-  const { missions, isLoading, refreshMissions, startWorkout } = useWorkoutStore();
+  const { missions, isLoading, refreshMissions, startWorkout, uncompleteMission } = useWorkoutStore();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,6 +18,12 @@ export function MissionsPage() {
   }, []);
 
   const handleStart = (id: string) => {
+    startWorkout(id);
+    navigate('/workout');
+  };
+
+  const handleRedo = (id: string) => {
+    uncompleteMission(id);
     startWorkout(id);
     navigate('/workout');
   };
@@ -92,11 +98,21 @@ export function MissionsPage() {
                     )}
                   </div>
                 </div>
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 flex items-center gap-1.5">
                   {mission.completed ? (
-                    <span className="text-xs text-neon-green font-mono flex items-center gap-1">
-                      <CheckCircle size={12} /> Done
-                    </span>
+                    <>
+                      <motion.button
+                        whileTap={{ scale: 0.85 }}
+                        onClick={() => handleRedo(mission.id)}
+                        className="text-xs bg-cyber-700/50 hover:bg-neon-cyan/20 text-gray-400 hover:text-neon-cyan px-2 py-1 rounded-lg font-mono flex items-center gap-1 transition-all cursor-pointer"
+                        title="Redo this workout"
+                      >
+                        <RotateCcw size={11} /> Redo
+                      </motion.button>
+                      <span className="text-xs text-neon-green font-mono flex items-center gap-1">
+                        <CheckCircle size={12} /> Done
+                      </span>
+                    </>
                   ) : (
                     <Button size="sm" variant="primary" onClick={() => handleStart(mission.id)}>
                       Go <ArrowRight size={14} />

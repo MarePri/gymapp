@@ -1,27 +1,41 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Character, Achievement, Quest } from '../types';
-import { DEFAULT_CHARACTER, MOCK_ACHIEVEMENTS, MOCK_QUESTS, LEVEL_THRESHOLDS } from '../data/mockData';
+import { MOCK_ACHIEVEMENTS, MOCK_QUESTS, LEVEL_THRESHOLDS } from '../data/mockData';
+
+const FRESH_CHARACTER: Character = {
+  name: 'Prixi',
+  level: 1,
+  xp: 0,
+  xpToNext: 100,
+  stats: { power: 5, physique: 5, endurance: 5, discipline: 5 },
+  statPoints: 0,
+  joinDate: new Date().toISOString().split('T')[0],
+  title: 'Iron Novice',
+};
 
 interface GameState {
   character: Character;
   achievements: Achievement[];
   quests: Quest[];
+  totalWorkoutsCompleted: number;
   addXP: (amount: number) => void;
   addStatPoints: (amount: number) => void;
   assignStat: (stat: keyof Character['stats']) => void;
+  incrementWorkouts: () => void;
   completeQuest: (questId: string) => void;
-  checkLevelUp: () => string | null;
   unlockAchievement: (id: string) => void;
   setCharacterName: (name: string) => void;
+  resetCharacter: () => void;
 }
 
 export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
-      character: DEFAULT_CHARACTER,
+      character: FRESH_CHARACTER,
       achievements: MOCK_ACHIEVEMENTS,
       quests: MOCK_QUESTS,
+      totalWorkoutsCompleted: 0,
 
       addXP: (amount: number) => {
         set((state) => {
@@ -31,7 +45,7 @@ export const useGameStore = create<GameState>()(
           while (xp >= xpToNext) {
             xp -= xpToNext;
             level += 1;
-            const threshold = LEVEL_THRESHOLDS[level - 1] || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1];
+            const threshold = LEVEL_THRESHOLDS[Math.min(level - 1, LEVEL_THRESHOLDS.length - 1)];
             xpToNext = threshold.xpRequired;
             leveledUp = true;
           }
@@ -41,7 +55,7 @@ export const useGameStore = create<GameState>()(
               xp,
               xpToNext,
               level,
-              title: (LEVEL_THRESHOLDS[level - 1] || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]).title,
+              title: LEVEL_THRESHOLDS[Math.min(level - 1, LEVEL_THRESHOLDS.length - 1)].title,
               statPoints: state.character.statPoints + (leveledUp ? 2 : 0),
             },
           };
@@ -66,6 +80,10 @@ export const useGameStore = create<GameState>()(
         });
       },
 
+      incrementWorkouts: () => {
+        set((state) => ({ totalWorkoutsCompleted: state.totalWorkoutsCompleted + 1 }));
+      },
+
       completeQuest: (questId: string) => {
         const quest = get().quests.find((q) => q.id === questId);
         if (!quest || quest.completed) return;
@@ -73,10 +91,6 @@ export const useGameStore = create<GameState>()(
           quests: get().quests.map((q) => (q.id === questId ? { ...q, completed: true, progress: q.target } : q)),
         });
         get().addXP(quest.reward.xp);
-      },
-
-      checkLevelUp: () => {
-        return null;
       },
 
       unlockAchievement: (id: string) => {
@@ -89,6 +103,10 @@ export const useGameStore = create<GameState>()(
 
       setCharacterName: (name: string) => {
         set((state) => ({ character: { ...state.character, name } }));
+      },
+
+      resetCharacter: () => {
+        set({ character: FRESH_CHARACTER, totalWorkoutsCompleted: 0 });
       },
     }),
     { name: 'prixi-game' }

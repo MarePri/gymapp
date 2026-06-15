@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import { useUserStore } from '../../stores/userStore';
 import { useProgressStore } from '../../stores/progressStore';
 import { motion } from 'framer-motion';
 import { Card } from '../ui/Card';
 import { GlassHeader } from '../ui/GlassHeader';
-import { Trophy, Target, Zap } from 'lucide-react';
+import { Trophy, Target, Zap, Edit2, Check, X } from 'lucide-react';
 import { formatDate } from '../../utils/formatters';
 
 const exerciseIcons: Record<string, string> = {
@@ -29,8 +30,10 @@ const levelColors: Record<Level, { text: string; bg: string; bar: string }> = {
 };
 
 export function StrengthPage() {
-  const { standards, profile } = useUserStore();
+  const { standards, profile, updateExerciseWeight } = useUserStore();
   const { strengthRecords } = useProgressStore();
+  const [editExercise, setEditExercise] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
 
   const getLevel = (current: number, beginner: number, intermediate: number): Level => {
     if (current >= intermediate) return 'advanced';
@@ -42,6 +45,27 @@ export function StrengthPage() {
     if (level === 'beginner') return Math.min(100, (current / beginner) * 100);
     if (level === 'intermediate') return Math.min(100, (current / intermediate) * 100);
     return Math.min(100, (current / advanced) * 100);
+  };
+
+  const startEdit = (exercise: string, current: number) => {
+    setEditExercise(exercise);
+    setEditValue(String(current));
+  };
+
+  const saveEdit = () => {
+    if (editExercise && editValue) {
+      const val = parseFloat(editValue);
+      if (!isNaN(val) && val > 0) {
+        updateExerciseWeight(editExercise, val);
+      }
+    }
+    setEditExercise(null);
+    setEditValue('');
+  };
+
+  const cancelEdit = () => {
+    setEditExercise(null);
+    setEditValue('');
   };
 
   if (!profile) {
@@ -71,6 +95,7 @@ export function StrengthPage() {
           const level = getLevel(std.current, std.beginner, std.intermediate);
           const colors = levelColors[level];
           const progress = getProgressToNext(std.current, level, std.beginner, std.intermediate, std.advanced);
+          const isEditing = editExercise === std.exercise;
 
           return (
             <motion.div
@@ -85,7 +110,43 @@ export function StrengthPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <h3 className="text-xs font-semibold text-white truncate">{std.exercise}</h3>
-                      <span className={`text-xs font-bold font-mono ${colors.text}`}>{std.current}kg</span>
+                      <div className="flex items-center gap-1">
+                        {isEditing ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              className="w-16 text-xs font-mono bg-cyber-700 border border-neon-cyan/30 rounded px-1 py-0.5 text-white text-right"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') saveEdit();
+                                if (e.key === 'Escape') cancelEdit();
+                              }}
+                            />
+                            <span className="text-[10px] text-gray-500">kg</span>
+                            <button onClick={saveEdit} className="p-0.5 text-neon-green hover:text-white cursor-pointer">
+                              <Check size={12} />
+                            </button>
+                            <button onClick={cancelEdit} className="p-0.5 text-gray-500 hover:text-white cursor-pointer">
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <span className={`text-xs font-bold font-mono ${colors.text}`}>{std.current}kg</span>
+                            <button
+                              onClick={() => startEdit(std.exercise, std.current)}
+                              className="p-0.5 text-gray-500 hover:text-neon-cyan cursor-pointer"
+                              title="Edit your current max"
+                            >
+                              <Edit2 size={10} />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
 
                     {/* Progress bar to next level */}
@@ -102,9 +163,11 @@ export function StrengthPage() {
                       <span className={`text-[9px] font-mono ${colors.text}`}>
                         {level} (goal: {level === 'beginner' ? `${std.beginner}kg` : level === 'intermediate' ? `${std.intermediate}kg` : `${std.advanced}kg`})
                       </span>
-                      <span className="text-[9px] text-gray-500 font-mono">
-                        Next: {std.nextMilestone}kg
-                      </span>
+                      {!isEditing && (
+                        <span className="text-[9px] text-gray-500 font-mono">
+                          Next: {std.nextMilestone}kg
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

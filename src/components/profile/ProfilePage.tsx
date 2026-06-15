@@ -1,11 +1,12 @@
 import { useGameStore } from '../../stores/gameStore';
 import { useUserStore } from '../../stores/userStore';
+import { useWorkoutStore } from '../../stores/workoutStore';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Card } from '../ui/Card';
 import { ProgressBar } from '../ui/ProgressBar';
 import { GlassHeader } from '../ui/GlassHeader';
-import { Shield, Plus, User, Weight, Ruler, Settings } from 'lucide-react';
+import { Shield, Plus, User, Weight, Ruler, Settings, Flame, Dumbbell } from 'lucide-react';
 import { formatDate } from '../../utils/formatters';
 
 const statConfig: { key: 'power' | 'physique' | 'endurance' | 'discipline'; label: string; icon: string; color: string; bar: 'cyan' | 'pink' | 'green' | 'purple' }[] = [
@@ -19,8 +20,50 @@ export function ProfilePage() {
   const navigate = useNavigate();
   const character = useGameStore((s) => s.character);
   const achievements = useGameStore((s) => s.achievements);
+  const totalWorkoutsCompleted = useGameStore((s) => s.totalWorkoutsCompleted);
   const assignStat = useGameStore((s) => s.assignStat);
   const profile = useUserStore((s) => s.profile);
+  const sessionHistory = useWorkoutStore((s) => s.sessionHistory);
+
+  // Compute streak: count consecutive unique days going back from today
+  const computeStreak = (): number => {
+    const workoutDates = [
+      ...new Set(
+        sessionHistory
+          .filter((s) => s.completed)
+          .map((s) => s.startTime.split('T')[0])
+      ),
+    ].sort((a, b) => b.localeCompare(a)); // newest first
+
+    if (workoutDates.length === 0) return 0;
+
+    let streak = 1;
+    const today = new Date().toISOString().split('T')[0];
+
+    // Check if most recent workout was today or yesterday
+    const mostRecent = workoutDates[0];
+    const diff = Math.floor(
+      (new Date(today).getTime() - new Date(mostRecent).getTime()) / 86400000
+    );
+    if (diff > 1) return 0;
+    // diff === 0 means latest is today; diff === 1 means latest is yesterday
+
+    for (let i = 1; i < workoutDates.length; i++) {
+      const prev = new Date(workoutDates[i - 1]);
+      const curr = new Date(workoutDates[i]);
+      const dayDiff = Math.floor(
+        (prev.getTime() - curr.getTime()) / 86400000
+      );
+      if (dayDiff === 1) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  };
+
+  const streak = computeStreak();
 
   const xpPct = Math.min(Math.round((character.xp / character.xpToNext) * 100), 100);
   const unlockedCount = achievements.filter((a) => a.unlocked).length;
@@ -133,6 +176,23 @@ export function ProfilePage() {
               <span key={f} className="text-[9px] bg-neon-cyan/10 text-neon-cyan px-1.5 py-0.5 rounded-full">{f}</span>
             ))}
             {profile.focusAreas.length > 3 && <span className="text-[9px] text-gray-500">+{profile.focusAreas.length - 3}</span>}
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Card>
+          <div className="text-[10px] text-gray-500 font-mono uppercase flex items-center gap-1">
+            <Dumbbell size={10} /> Workouts
+          </div>
+          <div className="text-lg font-bold text-neon-cyan">{totalWorkoutsCompleted}</div>
+        </Card>
+        <Card>
+          <div className="text-[10px] text-gray-500 font-mono uppercase flex items-center gap-1">
+            <Flame size={10} /> Streak
+          </div>
+          <div className={`text-lg font-bold ${streak > 0 ? 'text-neon-amber' : 'text-gray-500'}`}>
+            {streak > 0 ? `${streak} days` : '—'}
           </div>
         </Card>
       </div>
