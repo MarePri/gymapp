@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cyber-900: #0a0a0f;
+  --color-cyber-800: #12121a;
+  --color-cyber-700: #1a1a2e;
+  --color-cyber-600: #232340;
+  --color-cyber-500: #2d2d50;
+  --color-neon-cyan: #00f0ff;
+  --color-neon-pink: #ff2d78;
+  --color-neon-purple: #a855f7;
+  --color-neon-green: #22ff88;
+  --color-neon-amber: #ffb800;
+  --color-gold: #ffd700;
+  --color-platinum: #e5e7eb;
+  --color-matte-black: #0d0d0d;
+  --color-card-bg: #14141f;
+  --color-surface: #1c1c2e;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-cyber-900 text-gray-100 antialiased;
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-cyber-500);
+    border-radius: 2px;
+  }
+}
+
+@utility glass {
+  background: rgba(20, 20, 31, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@utility neon-glow {
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.15), 0 0 30px rgba(0, 240, 255, 0.05);
+}
+
+@utility neon-glow-pink {
+  box-shadow: 0 0 15px rgba(255, 45, 120, 0.2), 0 0 30px rgba(255, 45, 120, 0.05);
+}
+
+@utility neon-glow-green {
+  box-shadow: 0 0 15px rgba(34, 255, 136, 0.15), 0 0 30px rgba(34, 255, 136, 0.05);
+}
+
+@utility text-gradient-cyan {
+  background: linear-gradient(135deg, #00f0ff, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@utility text-gradient-gold {
+  background: linear-gradient(135deg, #ffd700, #ffb800);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@utility text-gradient-pink {
+  background: linear-gradient(135deg, #ff2d78, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@utility cyber-border {
+  border-image: linear-gradient(135deg, #00f0ff, #a855f7) 1;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes cyber-flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes xp-bar-fill {
+  from { width: 0%; }
+}
+
+@keyframes stat-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
