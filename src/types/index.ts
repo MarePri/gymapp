@@ -1,3 +1,70 @@
+// ─── User Profile ───────────────────────────────────────────
+export interface UserProfile {
+  name: string;
+  height: number; // cm
+  weight: number; // kg
+  age: number;
+  gender: 'male' | 'female' | 'other';
+  experience: 'beginner' | 'intermediate' | 'advanced';
+  focusAreas: string[]; // e.g. ['chest', 'arms', 'neck', 'back', 'legs', 'shoulders']
+  goal: 'strength' | 'hypertrophy' | 'endurance' | 'recomposition';
+  onboarded: boolean;
+}
+
+export interface StrengthStandards {
+  exercise: string;
+  current: number; // current working weight in kg
+  target1RM: number; // estimated 1RM
+  beginner: number; // standard for beginner
+  intermediate: number; // standard for intermediate
+  advanced: number; // standard for advanced
+  nextMilestone: number; // next weight to aim for
+  progression: 'ready' | '2_sessions' | '4_sessions' | 'plateau';
+}
+
+// ─── Workout Plans ─────────────────────────────────────────
+export interface WorkoutDay {
+  id: string;
+  dayNumber: number;
+  name: string; // e.g. "Chest & Triceps"
+  focus: string[];
+  exercises: ExerciseEntry[];
+  completed: boolean;
+  date: string | null;
+}
+
+export interface WorkoutPlan {
+  id: string;
+  name: string;
+  description: string;
+  days: WorkoutDay[];
+  currentDay: number; // which day they're on (rotates)
+  startDate: string;
+  split: 'ppl' | 'upper_lower' | 'full_body';
+}
+
+// ─── Rating System ──────────────────────────────────────────
+export type DifficultyRating = 'easy' | 'medium' | 'hard';
+
+export interface WorkoutFeedback {
+  sessionId: string;
+  rating: DifficultyRating;
+  notes?: string;
+  adjustedWeights?: Record<string, number>; // exercise -> new weight
+}
+
+// ─── Progression ────────────────────────────────────────────
+export interface ProgressionRule {
+  exercise: string;
+  currentWeight: number;
+  currentReps: number;
+  targetReps: number; // e.g. 8-12 range, target is 12
+  sets: number;
+  increment: number; // e.g. 2.5kg
+  lastRating?: DifficultyRating;
+}
+
+// ─── Existing types (extended) ──────────────────────────────
 export interface CharacterStats {
   power: number;
   physique: number;
@@ -34,10 +101,7 @@ export interface Quest {
   objective: string;
   progress: number;
   target: number;
-  reward: {
-    xp: number;
-    title?: string;
-  };
+  reward: { xp: number; title?: string };
   completed: boolean;
   deadline?: string;
 }
@@ -69,7 +133,7 @@ export interface WorkoutMission {
   id: string;
   name: string;
   description: string;
-  type: 'armor' | 'strength' | 'engine' | 'arena';
+  type: 'armor' | 'strength' | 'engine' | 'arena' | 'daily';
   icon: string;
   exercises: ExerciseEntry[];
   xpReward: number;
@@ -77,6 +141,7 @@ export interface WorkoutMission {
   completed: boolean;
   date: string;
   duration?: number;
+  dayNumber?: number;
 }
 
 export interface StrengthRecord {
@@ -127,6 +192,8 @@ export interface WorkoutSession {
   exercises: ExerciseEntry[];
   completed: boolean;
   xpEarned: number;
+  rating?: DifficultyRating;
+  dayNumber?: number;
 }
 
 export type TabId = 'profile' | 'missions' | 'workout' | 'strength' | 'dashboard' | 'coach' | 'quests' | 'achievements' | 'analytics';
